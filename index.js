@@ -1,6 +1,14 @@
-const express = require('express');
+const express = require("express");
+const { OPEN_READWRITE } = require("sqlite3");
 const app = express();
-const { User } = require('./db');
+const { User, Kitten } = require("./db");
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const { application } = require("express");
+const SALT_COUNT = 10;
+const bcrypt = require("bcrypt");
+const {JWT_SECRET} = process.env;
+
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
@@ -22,6 +30,22 @@ app.get('/', async (req, res, next) => {
 // Verifies token with jwt.verify and sets req.user
 // TODO - Create authentication middleware
 
+const authUser = (req, res, next) => {
+try{
+  const auth = req.header("Authorization");
+  if(!auth){
+    next();
+} else{
+    const [, token] = auth.split(' ');
+    const user = jwt.verify(token, JWT_SECRET);
+    req.user = user;
+    // console.log(user)
+    next()
+}
+} catch(err) {
+res.send(err)
+}
+}
 // POST /register
 // OPTIONAL - takes req.body of {username, password} and creates a new user with the hashed password
 
@@ -30,6 +54,25 @@ app.get('/', async (req, res, next) => {
 
 // GET /kittens/:id
 // TODO - takes an id and returns the cat with that id
+
+app.get('/kittens/:id', authUser, async(req, res, next) => {
+try {
+  // const kittenId = req.params.id
+  // const owner = req.user.id
+  const kitten = await Kitten.findByPk(req.params.id);
+    if (kitten.ownerId === req?.user?.id) {
+  // const kitten = await Kitten.findByPK(req.params.id);
+  //   if (kitten.ownerId === req?.user?.id) {
+    res.status(200).send({name: kitten.name, color: kitten.color, age: kitten.age});
+  } else {
+    res.status(401).send("Unauthorized")
+  }
+} catch(err) {
+  console.log(err)
+  // res.send(err)
+  next()
+}
+})
 
 // POST /kittens
 // TODO - takes req.body of {name, age, color} and creates a new cat with the given name, age, and color
