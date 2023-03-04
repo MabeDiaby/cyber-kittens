@@ -57,29 +57,56 @@ res.send(err)
 
 app.get('/kittens/:id', authUser, async(req, res, next) => {
 try {
-  // const kittenId = req.params.id
-  // const owner = req.user.id
-  const kitten = await Kitten.findByPk(req.params.id);
-    if (kitten.ownerId === req?.user?.id) {
-  // const kitten = await Kitten.findByPK(req.params.id);
-  //   if (kitten.ownerId === req?.user?.id) {
+  const kittenId = req.params.id
+  const owner = req?.user?.id
+  const kitten = await Kitten.findByPk(kittenId);
+    if (kitten.ownerId === owner) {
     res.status(200).send({name: kitten.name, color: kitten.color, age: kitten.age});
   } else {
     res.status(401).send("Unauthorized")
   }
 } catch(err) {
-  console.log(err)
-  // res.send(err)
+  res.send(err)
   next()
 }
 })
 
 // POST /kittens
 // TODO - takes req.body of {name, age, color} and creates a new cat with the given name, age, and color
+app.post('/kittens', authUser, async(req, res, next) => {
+  try {
+    const user = req.user
+    if(user) {
+      let newKitten = await Kitten.create(req.body)
+      res.status(201).send({name: newKitten.name, color: newKitten.color, age: newKitten.age})
+    } else {
+      res.status(401).send('Unauthorized')
+    }
 
+  } catch(err) {
+    res.send(err)
+    next()
+  }
+})
 // DELETE /kittens/:id
 // TODO - takes an id and deletes the cat with that id
+app.delete('/kittens/:id', authUser, async(req, res, next) => {
+  try{
+    const kittenId = req.params.id
+    const owner = req?.user?.id
+    const kitten = await Kitten.findByPk(kittenId);
+    if (kitten.ownerId === owner){
+      await kitten.destroy()
+      res.status(204).send("kitten has been deleted")
+  } else {
+    res.status(401).send('Unauthorized')
+  }
 
+  } catch(err) {
+    res.send(err)
+    next()
+  }
+})
 // error handling middleware, so failed tests receive them
 app.use((error, req, res, next) => {
   console.error('SERVER ERROR: ', error);
