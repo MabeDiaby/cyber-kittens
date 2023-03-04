@@ -66,6 +66,26 @@ app.post('/register', authUser, async(req, res, next) => {
 
 // POST /login
 // OPTIONAL - takes req.body of {username, password}, finds user by username, and compares the password with the hashed version from the DB
+app.post('/login', authUser, async(req, res, next) => {
+  try {
+    const {username, password} = req.body
+
+    const user = await User.findOne({ username });
+
+    if (user) {
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      const token = jwt.sign({ username }, JWT_SECRET);
+      if (passwordMatch) {
+        res.status(200).send({message: "success", token})
+      } else {
+          res.status(401).send('Unauthorized')
+      }
+    }
+  } catch(err) {
+    res.send(err)
+    next()
+  }
+})
 
 // GET /kittens/:id
 // TODO - takes an id and returns the cat with that id
