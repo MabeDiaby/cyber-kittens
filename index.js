@@ -48,6 +48,21 @@ res.send(err)
 }
 // POST /register
 // OPTIONAL - takes req.body of {username, password} and creates a new user with the hashed password
+app.post('/register', authUser, async(req, res, next) => {
+  try {
+    const {username, password} = req.body
+      const hashedPassword = await bcrypt.hash(password, SALT_COUNT)
+
+      await User.create({username, password: hashedPassword})
+      const token = jwt.sign({ username }, JWT_SECRET);
+      res.status(200).send({ message: 'success',
+      token})
+
+  } catch(err) {
+    res.send(err)
+    next()
+  }
+})
 
 // POST /login
 // OPTIONAL - takes req.body of {username, password}, finds user by username, and compares the password with the hashed version from the DB
